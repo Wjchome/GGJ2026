@@ -415,6 +415,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1172711409343856019, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2165465149994283553, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
       propertyPath: m_FontData.m_FontSize
       value: 25
@@ -435,6 +439,22 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -180
       objectReference: {fileID: 0}
+    - target: {fileID: 3346233186637649737, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 400
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346233186637649737, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346233186637649737, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -13
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346233186637649737, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 107
+      objectReference: {fileID: 0}
     - target: {fileID: 3356809355273899431, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
       propertyPath: m_FontData.m_MinSize
       value: 3
@@ -450,6 +470,10 @@ PrefabInstance:
     - target: {fileID: 6106849620718681690, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 259
+      objectReference: {fileID: 0}
+    - target: {fileID: 6339195230277574288, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_FontData.m_Alignment
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 6877984357744954924, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
       propertyPath: m_AnchorMax.x
@@ -483,9 +507,29 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6978855733435897493, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8002432780381893668, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
       propertyPath: m_Name
       value: SingleUI
+      objectReference: {fileID: 0}
+    - target: {fileID: 9038843675988610848, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 563.96
+      objectReference: {fileID: 0}
+    - target: {fileID: 9038843675988610848, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 928
+      objectReference: {fileID: 0}
+    - target: {fileID: 9038843675988610848, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -3
+      objectReference: {fileID: 0}
+    - target: {fileID: 9038843675988610848, guid: 956846e3fd74a4411bee9acbe5beaf4b, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

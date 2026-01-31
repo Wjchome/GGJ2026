@@ -73,6 +73,14 @@ public class CardManager : MonoBehaviour
         cardUIManager.sortCardsBtn.onClick.RemoveAllListeners();
         cardUIManager.sortCardsBtn.onClick.AddListener(OnSortCards);
 
+        cardUIManager.showStrategyBtn.onClick.RemoveAllListeners();
+        cardUIManager.showStrategyBtn.onClick.AddListener(OnShowStrategy);
+
+        cardUIManager.closeStrategyBtn.onClick.RemoveAllListeners();
+        cardUIManager.closeStrategyBtn.onClick.AddListener(OnCloseStrategy);
+
+        // 初始化策略面板为关闭状态
+        cardUIManager.strategyPanel.SetActive(false);
 
         UpdateUIButtons();
     }
@@ -546,6 +554,125 @@ public class CardManager : MonoBehaviour
     {
         SortMineCards();
         SortSceneCards();
+    }
+
+    /// <summary>
+    /// 显示策略面板
+    /// </summary>
+    public void OnShowStrategy()
+    {
+        string strategyDescription = GenerateStrategyDescription();
+        cardUIManager.strategyText.text = strategyDescription;
+        cardUIManager.strategyPanel.SetActive(true);
+    }
+
+    /// <summary>
+    /// 关闭策略面板
+    /// </summary>
+    public void OnCloseStrategy()
+    {
+        cardUIManager.strategyPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// 生成AI审查策略描述文本
+    /// </summary>
+    private string GenerateStrategyDescription()
+    {
+        if (aiSettings == null)
+        {
+            return "AI设置未初始化";
+        }
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine("=== AI审查策略 ===");
+        sb.AppendLine();
+
+        // 回合规则
+        sb.AppendLine($"【回合规则】");
+        sb.AppendLine($"每局游戏：{aiSettings.roundsPerGame}个小局，还剩{aiSettings.roundsPerGame -currentRoundIndex}个小局");
+        sb.AppendLine();
+
+        // 审查规则
+        sb.AppendLine($"【审查规则】");
+        
+        // 手牌数量暴露检测
+        if (aiSettings.checkHandCountExposure)
+        {
+            sb.AppendLine("✓ 手牌数量暴露检测：开启");
+            sb.AppendLine("  检测玩家摸牌数量与打出牌数量是否一致");
+        }
+        else
+        {
+            sb.AppendLine("✗ 手牌数量暴露检测：关闭");
+        }
+        sb.AppendLine();
+
+        // 单牌数量审查模式
+        sb.AppendLine($"【单牌数量审查】");
+        switch (aiSettings.cardCountAuditMode)
+        {
+            case CardCountAuditMode.None:
+                sb.AppendLine("模式：不审查");
+                break;
+            case CardCountAuditMode.AllCards:
+                sb.AppendLine("模式：审查全部卡牌");
+                sb.AppendLine("  检测是否有单牌数量超过限制");
+                break;
+            case CardCountAuditMode.PlayerCardsOnly:
+                sb.AppendLine("模式：只审查玩家出的卡牌");
+                sb.AppendLine("  只检查玩家出的牌是否超过限制");
+                break;
+        }
+        sb.AppendLine();
+
+        // AI玩法风格
+        sb.AppendLine($"【AI玩法风格】");
+        sb.AppendLine($"AI停牌阈值：{aiSettings.aiThreshold}点");
+        sb.AppendLine($"AI在点数达到或超过{aiSettings.aiThreshold}点时停止摸牌");
+        sb.AppendLine();
+
+        // 卡牌配置
+        sb.AppendLine($"【卡牌配置】");
+        if (aiSettings.CardNumbers != null && aiSettings.CardNumbers.Count > 1)
+        {
+            sb.AppendLine("各牌型最大数量：");
+            for (int i = 1; i < aiSettings.CardNumbers.Count && i <= 13; i++)
+            {
+                if (i < aiSettings.CardNumbers.Count)
+                {
+                    string cardName = GetCardName(i);
+                    int maxCount = aiSettings.CardNumbers[i];
+                    sb.Append($"  {cardName}: {maxCount}张    ");
+                }
+
+                if (i % 3 == 0)
+                {
+                    sb.AppendLine();
+                }
+            }
+        }
+        else
+        {
+            sb.AppendLine("卡牌配置未设置");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 获取卡牌名称
+    /// </summary>
+    private string GetCardName(int cardNumber)
+    {
+        switch (cardNumber)
+        {
+            case 1: return "A";
+            case 11: return "J";
+            case 12: return "Q";
+            case 13: return "K";
+            default: return cardNumber.ToString();
+        }
     }
 
     /// <summary>
