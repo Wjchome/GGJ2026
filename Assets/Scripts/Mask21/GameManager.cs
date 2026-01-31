@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 
@@ -7,6 +9,13 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
     public CardManager[] cardManagers;
+    
+   
+    
+   
+    
+    // 当前操作的CardManager索引（如果有多个CardManager）
+    private int currentManagerIndex = 0;
 
     public void Start()
     {
@@ -15,16 +24,22 @@ public class GameManager : MonoBehaviour
         {
             cardManager.Init();
         }
-        //给ai发两张牌
+        
+        // 给ai发两张牌
         foreach (CardManager cardManager in cardManagers)
         {
-            cardManager.SendAICard();
-            cardManager.SendAICard();
-
-            cardManager.SendMineCard();
-            cardManager.SendMineCard();
+            // cardManager.SendAICard();
+            // cardManager.SendAICard();
+            //
+            // cardManager.SendMineCard();
+            // cardManager.SendMineCard();
         }
+        
+
     }
+    
+ 
+    
 
     /// <summary>
     /// 将卡牌从一个CardManager转移到另一个CardManager
@@ -66,6 +81,9 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
+
+        fromManager.UpdateUIButtons();
+        toManager.UpdateUIButtons();
     }
 
     private void Update()
