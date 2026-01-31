@@ -650,6 +650,10 @@ public class CardManager : MonoBehaviour
     /// </summary>
     public bool ShouldAIDrawCard()
     {
+        if (cardIndex < 0)
+        {
+            return false;
+        }
         var (currentPoints, _) = GetAIPoints();
         // 如果点数已经达到或超过阈值，不摸牌
         // 如果点数已经达到或超过21，不摸牌
@@ -661,6 +665,10 @@ public class CardManager : MonoBehaviour
     /// </summary>
     public bool CanPlayerDrawCard()
     {
+        if (cardIndex < 0)
+        {
+            return false;
+        }
         var (currentPoints, _) = GetPlayerPoints();
         return currentPoints < 21 && myCardNum < MAX_CARDS && cardIndex >= 0;
     }
