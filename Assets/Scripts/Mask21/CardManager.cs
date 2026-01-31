@@ -11,7 +11,7 @@ public class CardManager : MonoBehaviour
     public Sprite cardBack;
 
     public List<CardMono> cards;
-    
+
 
     public CardMono cardPrefab;
     public Transform cardParent;
@@ -24,29 +24,7 @@ public class CardManager : MonoBehaviour
 
     public Button getCardBtn;
 
-    public void Init()
-    {
-        var config = DeckConfig.CardNumbers;
-        var list = ExpandCardDictionary(config);
-        ShuffleCardList(list);
-        cardIndex = list.Count - 1;
-        for (int i = 0; i < list.Count; i++)
-        {
-            var cardNum = list[i];
-            Vector2 cardPos = (Vector2)cardParent.position + new Vector2(0, -i * f);
-            CardMono card = Instantiate(cardPrefab, cardPos, Quaternion.identity, cardParent);
-            card.cardManager = this;
-            card.cardNumber = cardNum;
-            card.isBack = true;
-            card.ChangeSprite();
-            card.spriteRenderer.sortingOrder = i;
-            cards.Add(card);
-        }
-        
-        getCardBtn.onClick.RemoveAllListeners();
-        getCardBtn.onClick.AddListener(() => SendMineCard());
-    }
-    
+
     private List<int> ExpandCardDictionary(Dictionary<int, int> cardDict)
     {
         List<int> result = new List<int>();
@@ -63,7 +41,7 @@ public class CardManager : MonoBehaviour
 
         return result;
     }
-    
+
     private void ShuffleCardList(List<int> cardList)
     {
         // 从列表末尾向前遍历，逐个交换随机位置的元素
@@ -94,9 +72,69 @@ public class CardManager : MonoBehaviour
     public int cardIndex;
     public int AICardNum;
     public float ff;
+
+    // 预计算的8个位置
+    private const int MAX_CARDS = 8;
+    private Vector2[] aiCardPositions = new Vector2[MAX_CARDS];
+    private Vector2[] myCardPositions = new Vector2[MAX_CARDS];
+
+    // 管理mine卡牌列表
+    public List<CardMono> mineCards = new List<CardMono>();
+
+    public void Init()
+    {
+        var config = DeckConfig.CardNumbers;
+        var list = ExpandCardDictionary(config);
+        ShuffleCardList(list);
+        cardIndex = list.Count - 1;
+
+        // 预计算AI和玩家的8个位置
+        CalculateCardPositions();
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            var cardNum = list[i];
+            Vector2 cardPos = (Vector2)cardParent.position + new Vector2(0, -i * f);
+            CardMono card = Instantiate(cardPrefab, cardPos, Quaternion.identity, cardParent);
+            card.cardManager = this;
+            card.cardNumber = cardNum;
+            card.isBack = true;
+            card.ChangeSprite();
+            card.spriteRenderer.sortingOrder = i;
+            cards.Add(card);
+        }
+
+        getCardBtn.onClick.RemoveAllListeners();
+        getCardBtn.onClick.AddListener(() => SendMineCard());
+    }
+
+    /// <summary>
+    /// 预计算AI和玩家各8个卡牌位置
+    /// </summary>
+    private void CalculateCardPositions()
+    {
+        for (int i = 0; i < MAX_CARDS; i++)
+        {
+            aiCardPositions[i] = (Vector2)AIPos.position + new Vector2(i * ff, 0);
+            myCardPositions[i] = (Vector2)MyPos.position + new Vector2(i * ff, 0);
+        }
+    }
+
     public void SendAICard()
-    { 
-        cards[cardIndex].transform.position = (Vector2)AIPos.position+new Vector2(0,-AICardNum*ff);
+    {
+        if (AICardNum >= MAX_CARDS)
+        {
+            Debug.LogWarning("AI卡牌已达到最大数量限制（8张）");
+            return;
+        }
+
+        if (cardIndex < 0)
+        {
+            Debug.LogWarning("牌堆已空");
+            return;
+        }
+
+        cards[cardIndex].transform.position = aiCardPositions[AICardNum];
         cards[cardIndex].spriteRenderer.sortingOrder = AICardNum;
         cards[cardIndex].isBack = true;
         cards[cardIndex].cardState = CardState.AI;
@@ -105,17 +143,78 @@ public class CardManager : MonoBehaviour
         AICardNum++;
     }
 
-
-
     public int myCardNum;
+
     public void SendMineCard()
     {
-        cards[cardIndex].transform.position = (Vector2)MyPos.position+new Vector2(0,-myCardNum*ff);
-        cards[cardIndex].spriteRenderer.sortingOrder =myCardNum;
+        if (myCardNum >= MAX_CARDS)
+        {
+            Debug.LogWarning("玩家卡牌已达到最大数量限制（8张）");
+            return;
+        }
+
+        if (cardIndex < 0)
+        {
+            Debug.LogWarning("牌堆已空");
+            return;
+        }
+
+        cards[cardIndex].transform.position = myCardPositions[myCardNum];
+        cards[cardIndex].spriteRenderer.sortingOrder = myCardNum;
         cards[cardIndex].isBack = false;
         cards[cardIndex].cardState = CardState.Mine;
         cards[cardIndex].ChangeSprite();
+        mineCards.Add(cards[cardIndex]);
         cardIndex--;
         myCardNum++;
+    }
+
+    /// <summary>
+    /// 添加mine卡牌（从其他CardManager转移过来）
+    /// </summary>
+    public bool AddMineCard(CardMono card)
+    {
+        if (myCardNum >= MAX_CARDS)
+        {
+            Debug.LogWarning("玩家卡牌已达到最大数量限制（8张）");
+            return false;
+        }
+
+        card.cardManager = this;
+        card.cardState = CardState.Mine;
+        card.isBack = false;
+        card.ChangeSprite();
+        mineCards.Add(card);
+
+        // 重新排列所有mine卡牌
+        RearrangeMineCards();
+        return true;
+    }
+
+    /// <summary>
+    /// 移除mine卡牌
+    /// </summary>
+    public void RemoveMineCard(CardMono card)
+    {
+        if (mineCards.Remove(card))
+        {
+            myCardNum--;
+            // 重新排列剩余卡牌
+            RearrangeMineCards();
+        }
+    }
+
+    /// <summary>
+    /// 重新排列所有mine卡牌的位置
+    /// </summary>
+    public void RearrangeMineCards()
+    {
+        for (int i = 0; i < mineCards.Count; i++)
+        {
+            mineCards[i].transform.position = myCardPositions[i];
+            mineCards[i].spriteRenderer.sortingOrder = i;
+        }
+
+        myCardNum = mineCards.Count;
     }
 }
