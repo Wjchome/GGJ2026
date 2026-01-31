@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using UnityEngine;
 
 public enum CardState
@@ -99,7 +100,7 @@ public class CardMono : MonoBehaviour
             // 如果目标CardManager就是当前CardManager，返回原位置
             if (targetManager == cardManager)
             {
-                transform.position = _dragStartPosition;
+                transform.DOMove( _dragStartPosition,0.3f);
                 return;
             }
             
@@ -108,7 +109,7 @@ public class CardMono : MonoBehaviour
         else
         {
             // 如果找不到GameManager或索引无效，返回原位置
-            transform.position = _dragStartPosition;
+            transform.DOMove( _dragStartPosition,0.3f);
         }
     }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -84,10 +85,15 @@ public class CardManager : MonoBehaviour
             {
                 playerCardsText.color = Color.red;
             }
+            else
+            {
+                playerCardsText.color = Color.white;
+            }
         }
         else
         {
             playerCardsText.text = $"{playerPoints} {playerPoints1}";
+            playerCardsText.color = Color.white;
         }
     }
 
@@ -324,7 +330,7 @@ public class CardManager : MonoBehaviour
         var res1 = playerPoints;
         if (res1 < 21)
         {
-            if (res1 + 10 <= playerPoints1 && res1 <= 21)
+            if (res1 + 10 <= playerPoints1 && res1 + 10 <= 21)
             {
                 res1 += 10;
             }
@@ -333,7 +339,7 @@ public class CardManager : MonoBehaviour
         var res2 = aiPoints;
         if (res2 < 21)
         {
-            if (res2 + 10 <= aiPoints1 && res2 <= 21)
+            if (res2 + 10 <= aiPoints1 && res2 + 10 <= 21)
             {
                 res2 += 10;
             }
@@ -397,7 +403,7 @@ public class CardManager : MonoBehaviour
             return;
         }
 
-        cards[cardIndex].transform.position = aiCardPositions[AICardNum];
+        cards[cardIndex].transform.DOMove(aiCardPositions[AICardNum], 0.3f);
         cards[cardIndex].spriteRenderer.sortingOrder = AICardNum;
         cards[cardIndex].isBack = true;
         cards[cardIndex].cardState = CardState.AI;
@@ -424,7 +430,7 @@ public class CardManager : MonoBehaviour
         }
 
 
-        cards[cardIndex].transform.position = myCardPositions[myCardNum];
+        cards[cardIndex].transform.DOMove(myCardPositions[myCardNum], 0.3f);
         cards[cardIndex].spriteRenderer.sortingOrder = myCardNum;
         cards[cardIndex].isBack = false;
         cards[cardIndex].cardState = CardState.Mine;
@@ -477,7 +483,7 @@ public class CardManager : MonoBehaviour
     {
         for (int i = 0; i < mineCards.Count; i++)
         {
-            mineCards[i].transform.position = myCardPositions[i];
+            mineCards[i].transform.DOMove(myCardPositions[i], 0.3f);
             mineCards[i].spriteRenderer.sortingOrder = i;
         }
 
