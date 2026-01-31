@@ -18,10 +18,7 @@ public class CardMono : MonoBehaviour
     public bool isBack = false;
 
     public CardState cardState = CardState.InDeck;
-    // private void Start()
-    // {
-    //     ChangeSprite();
-    // }
+
 
     public void ChangeSprite()
     {
@@ -59,57 +56,97 @@ public class CardMono : MonoBehaviour
             transform.position = GetMouseWorldPosition() + _mouseOffset;
         }
     }
-    
+
     private void OnMouseUp()
     {
         if (cardState == CardState.Mine && _isDragging)
         {
             _isDragging = false;
+
+            
             
             // 检测卡牌是否拖拽到屏幕左右两侧
             // 直接使用屏幕坐标判断，更准确
             float mouseScreenX = Input.mousePosition.x;
-            float screenCenterX = Screen.width / 2f;
-            
-            // 如果拖拽到右边屏幕，转移到CardManager[1]
-            // 如果拖拽到左边屏幕，转移到CardManager[0]
-            if (mouseScreenX > screenCenterX)
+            float mouseScreenY = Input.mousePosition.y;
+            if (GameManager.instance.levelConfig.aiSettings.Count == 2)
             {
-                // 右边屏幕，转移到CardManager[1]
-                TransferCardToManager(1);
+                float screenCenterX = Screen.width / 2f;
+
+                // 如果拖拽到右边屏幕，转移到CardManager[1]
+                // 如果拖拽到左边屏幕，转移到CardManager[0]
+                if (mouseScreenX > screenCenterX)
+                {
+                    // 右边屏幕，转移到CardManager[1]
+                    if (!TransferCardToManager(1))
+                    {
+                        transform.DOMove(_dragStartPosition, 0.3f);
+                    }
+                }
+                else
+                {
+                    // 右边屏幕，转移到CardManager[1]
+                    if (!TransferCardToManager(0))
+                    {
+                        transform.DOMove(_dragStartPosition, 0.3f);
+                    }
+                }
             }
-            else
+            else if (GameManager.instance.levelConfig.aiSettings.Count == 3)
             {
-                // 左边屏幕，转移到CardManager[0]
-                TransferCardToManager(0);
+                float screenCenterX1 = Screen.width / 3f;
+                float screenCenterX2 = 2* Screen.width / 3f;
+                
+                if (mouseScreenX < screenCenterX1)
+                {
+                    // 右边屏幕，转移到CardManager[1]
+                    if (!TransferCardToManager(0))
+                    {
+                        transform.DOMove(_dragStartPosition, 0.3f);
+                    }
+                }
+                else if (mouseScreenX > screenCenterX2)
+                {
+                    // 右边屏幕，转移到CardManager[1]
+                    if (!TransferCardToManager(2))
+                    {
+                        transform.DOMove(_dragStartPosition, 0.3f);
+                    }
+                }
+                else 
+                {
+                    // 右边屏幕，转移到CardManager[1]
+                    if (!TransferCardToManager(1))
+                    {
+                        transform.DOMove(_dragStartPosition, 0.3f);
+                    }
+                }
             }
         }
     }
-    
+
     /// <summary>
     /// 将卡牌转移到指定的CardManager
     /// </summary>
-    private void TransferCardToManager(int managerIndex)
+    private bool TransferCardToManager(int managerIndex)
     {
         // 通过GameManager来转移卡牌
         GameManager gameManager = GameManager.instance;
-        if ( managerIndex >= 0 && managerIndex < gameManager.cardManagers.Length)
+        if (managerIndex >= 0 && managerIndex < gameManager.cardManagers.Length)
         {
             CardManager targetManager = gameManager.cardManagers[managerIndex];
-            
+
             // 如果目标CardManager就是当前CardManager，返回原位置
             if (targetManager == cardManager)
             {
-                transform.DOMove( _dragStartPosition,0.3f);
-                return;
+                return false;
             }
-            
-            gameManager.TransferCard(this, cardManager, targetManager);
+
+            return gameManager.TransferCard(this, cardManager, targetManager);
         }
         else
         {
-            // 如果找不到GameManager或索引无效，返回原位置
-            transform.DOMove( _dragStartPosition,0.3f);
+            return false;
         }
     }
 

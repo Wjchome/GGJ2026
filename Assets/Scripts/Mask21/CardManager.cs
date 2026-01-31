@@ -25,15 +25,6 @@ public enum RoundResult
     Lose // 失败 -1
 }
 
-/// <summary>
-/// 暴露类型
-/// </summary>
-public enum ExposureType
-{
-    None, // 未暴露
-    CardCountExposure, // 单牌数量暴露（某种牌超过3张）
-    HandCountExposure // 手牌数量暴露（摸牌数和出牌数不匹配）
-}
 
 public class CardManager : MonoBehaviour
 {
@@ -48,7 +39,6 @@ public class CardManager : MonoBehaviour
 
     public CardMono cardPrefab;
     public Transform cardParent;
-
     public Transform AIPos;
     public Transform MyPos;
     public Transform SceneCardsPos; // 场上已打出牌的位置（小局结束后显示）
@@ -57,37 +47,27 @@ public class CardManager : MonoBehaviour
     public float playedCardScale = 0.7f; // 场上牌的缩放比例
 
 
-    // UI按钮
-    public Button playerDrawCardBtn; // 玩家摸牌按钮
-    public Button playerStandBtn; // 玩家不摸按钮
-    public Button revealCardsBtn; // 开牌按钮
-    public Text playerCardsText;
-    public Text aiCardsText;
-
-    public GameObject endPanel;
-    public Button endBtn;
-    public Text endText;
-    public Text endBtnText;
-
+    public CardUIManager cardUIManager;
 
     private void SetupUIButtons()
     {
-        playerCardsText.text = "";
-        aiCardsText.text = "";
+        cardUIManager.playerCardsText.text = "";
+        cardUIManager.aiCardsText.text = "";
+        cardUIManager.endPanel.gameObject.SetActive(false);
 
-        playerDrawCardBtn.onClick.RemoveAllListeners();
-        playerDrawCardBtn.onClick.AddListener(OnPlayerDrawCard);
-
-
-        playerStandBtn.onClick.RemoveAllListeners();
-        playerStandBtn.onClick.AddListener(OnPlayerStand);
+        cardUIManager.playerDrawCardBtn.onClick.RemoveAllListeners();
+        cardUIManager.playerDrawCardBtn.onClick.AddListener(OnPlayerDrawCard);
 
 
-        revealCardsBtn.onClick.RemoveAllListeners();
-        revealCardsBtn.onClick.AddListener(OnRevealCards);
+        cardUIManager.playerStandBtn.onClick.RemoveAllListeners();
+        cardUIManager.playerStandBtn.onClick.AddListener(OnPlayerStand);
 
-        endBtn.onClick.RemoveAllListeners();
-        endBtn.onClick.AddListener(OnEndRound);
+
+        cardUIManager.revealCardsBtn.onClick.RemoveAllListeners();
+        cardUIManager.revealCardsBtn.onClick.AddListener(OnRevealCards);
+
+        cardUIManager.endBtn.onClick.RemoveAllListeners();
+        cardUIManager.endBtn.onClick.AddListener(OnEndRound);
 
 
         UpdateUIButtons();
@@ -103,28 +83,28 @@ public class CardManager : MonoBehaviour
         bool canReveal = currentState == GameState.BothStand;
 
 
-        playerDrawCardBtn.interactable = canPlayerDraw && canPlayerStand;
-        playerStandBtn.interactable = canPlayerStand;
-        revealCardsBtn.interactable = canReveal;
+        cardUIManager.playerDrawCardBtn.interactable = canPlayerDraw && canPlayerStand;
+        cardUIManager.playerStandBtn.interactable = canPlayerStand;
+        cardUIManager.revealCardsBtn.interactable = canReveal;
 
 
         var (playerPoints, playerPoints1) = GetPlayerPoints();
         if (playerPoints == playerPoints1)
         {
-            playerCardsText.text = playerPoints.ToString();
+            cardUIManager.playerCardsText.text = playerPoints.ToString();
             if (playerPoints1 > 21)
             {
-                playerCardsText.color = Color.red;
+                cardUIManager.playerCardsText.color = Color.red;
             }
             else
             {
-                playerCardsText.color = Color.white;
+                cardUIManager.playerCardsText.color = Color.white;
             }
         }
         else
         {
-            playerCardsText.text = $"{playerPoints} {playerPoints1}";
-            playerCardsText.color = Color.white;
+            cardUIManager.playerCardsText.text = $"{playerPoints} {playerPoints1}";
+            cardUIManager.playerCardsText.color = Color.white;
         }
     }
 
@@ -139,6 +119,22 @@ public class CardManager : MonoBehaviour
             for (int i = 0; i < cardCount; i++)
             {
                 result.Add(cardNum);
+            }
+        }
+
+        return result;
+    }
+
+    private List<int> ExpandCardDictionary(List<int> cardDict)
+    {
+        List<int> result = new List<int>();
+        for (int i = 1; i < cardDict.Count; i++)
+        {
+            int cardCount = cardDict[i];
+            // 按数量添加卡牌，比如数字1添加3次，数字10添加9次
+            for (int j = 0; j < cardCount; j++)
+            {
+                result.Add(i);
             }
         }
 
@@ -188,13 +184,12 @@ public class CardManager : MonoBehaviour
     // 管理AI卡牌列表
     public List<CardMono> aiCards = new List<CardMono>();
 
-    // AI决策阈值（超过这个点数就不摸牌）
-    public int aiThreshold = 17;
+    [Header("AI Audit")] public AISettings aiSettings;
 
     // ========== 小局管理功能（合并自RoundManager） ==========
     // 小局相关
     private int currentRoundIndex = 0;
-    private int totalRounds = 0; // 2-3个小局
+
     private List<RoundResult> roundResults = new List<RoundResult>();
 
     // 暴露检测相关
@@ -202,14 +197,11 @@ public class CardManager : MonoBehaviour
     private Dictionary<int, int> usedCardsCount = new Dictionary<int, int>(); // 已打出的牌统计（跨小局）
     private List<CardMono> usedCards = new List<CardMono>(); // 所有已打出的牌（不回归牌堆）
 
-    // 暴露状态
-    public ExposureType exposureType = ExposureType.None;
-    public bool isExposed = false;
 
-    public void Init()
+    public void Init(AISettings settings)
     {
-        var config = DeckConfig.CardNumbers;
-        var list = ExpandCardDictionary(config);
+        aiSettings = settings;
+        var list = ExpandCardDictionary(aiSettings.CardNumbers);
         ShuffleCardList(list);
         cardIndex = list.Count - 1;
 
@@ -239,7 +231,7 @@ public class CardManager : MonoBehaviour
 
     public void WaitForNextRound()
     {
-        endPanel.SetActive(true);
+        cardUIManager.endPanel.SetActive(true);
     }
 
     private IEnumerator GameLoop()
@@ -383,13 +375,13 @@ public class CardManager : MonoBehaviour
         // 如果所有小局都完成了，通知GameManager
         if (IsAllRoundsFinished())
         {
-            endBtnText.text = $"单局结束";
+            cardUIManager.endBtnText.text = $"单局结束";
             currentState = GameState.GameOver;
             GameManager.instance.OnGameFinished();
         }
         else
         {
-            endBtnText.text = $"还剩{totalRounds - currentRoundIndex}局";
+            cardUIManager.endBtnText.text = $"还剩{aiSettings.roundsPerGame - currentRoundIndex}局";
             // 开始新的小局
             StartNewRound();
             // 重置游戏状态
@@ -404,15 +396,16 @@ public class CardManager : MonoBehaviour
     {
         if (IsAllRoundsFinished())
         {
-            
         }
         else
         {
-            endPanel.SetActive(false);
+            cardUIManager.endPanel.SetActive(false);
+            currentState = GameState.WaitingForAITurn;
         }
     }
 
     public float fff;
+    public int constW = 7;
 
     /// <summary>
     /// 预计算AI和玩家各8个卡牌位置
@@ -427,7 +420,8 @@ public class CardManager : MonoBehaviour
 
         for (int i = 0; i < 10 * MAX_CARDS; i++)
         {
-            scenePositions[i] = (Vector2)SceneCardsPos.position + new Vector2(i * fff, 0);
+            scenePositions[i] = (Vector2)SceneCardsPos.position +
+                                new Vector2((i % constW) * fff, -(i / constW) * 2 * fff);
         }
     }
 
@@ -548,7 +542,7 @@ public class CardManager : MonoBehaviour
 
         foreach (var card in cardList)
         {
-            int cardValue = DeckConfig.GetCardValue(card.cardNumber);
+            int cardValue = aiSettings.GetCardValue(card.cardNumber);
 
             if (card.cardNumber == 1)
             {
@@ -603,7 +597,7 @@ public class CardManager : MonoBehaviour
         var (currentPoints, _) = GetAIPoints();
         // 如果点数已经达到或超过阈值，不摸牌
         // 如果点数已经达到或超过21，不摸牌
-        return currentPoints < aiThreshold && currentPoints < 21;
+        return currentPoints < aiSettings.aiThreshold && currentPoints < 21;
     }
 
     /// <summary>
@@ -620,27 +614,13 @@ public class CardManager : MonoBehaviour
     /// <summary>
     /// 初始化小局
     /// </summary>
-    private void InitRounds(int rounds = 0)
+    private void InitRounds()
     {
-        if (rounds == 0)
-        {
-            // 随机2-3个小局
-            totalRounds = UnityEngine.Random.Range(2, 4);
-        }
-        else
-        {
-            totalRounds = rounds;
-        }
-
         currentRoundIndex = 0;
         roundResults.Clear();
         usedCardsCount.Clear();
         usedCards.Clear();
         cardsDrawnCount = 0;
-        exposureType = ExposureType.None;
-        isExposed = false;
-
-        Debug.Log($"初始化小局：共{totalRounds}个小局");
     }
 
     /// <summary>
@@ -648,17 +628,15 @@ public class CardManager : MonoBehaviour
     /// </summary>
     private void StartNewRound()
     {
-        if (currentRoundIndex >= totalRounds)
+        if (currentRoundIndex >= aiSettings.roundsPerGame)
         {
             Debug.LogWarning("所有小局已完成");
             return;
         }
 
-        aiCardsText.text = "";
+        cardUIManager.aiCardsText.text = "";
         currentRoundIndex++;
         cardsDrawnCount = 0;
-        exposureType = ExposureType.None;
-        isExposed = false;
 
         // 清空手牌，准备新小局
         mineCards.Clear();
@@ -682,27 +660,20 @@ public class CardManager : MonoBehaviour
     /// </summary>
     private RoundResult EndRound()
     {
-        RoundResult result = RoundResult.Win;
-
         int cardsPlayedCount = mineCards.Count;
+        bool exposed = false;
 
         // 检测1：手牌数量暴露
-        if (cardsPlayedCount != cardsDrawnCount)
+        if (aiSettings.checkHandCountExposure && cardsPlayedCount != cardsDrawnCount)
         {
-            exposureType = ExposureType.HandCountExposure;
-            isExposed = true;
-            endText.text = $"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌";
-            roundResults.Add(RoundResult.Lose);
-            result = RoundResult.Lose;
+            cardUIManager.endText.text = $"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌";
+            exposed = true;
         }
 
         // 检测2：单牌数量暴露（AI审查：场上牌数量+AI牌数量）
-        if (AICheckCardCount())
+        if (!exposed && aiSettings.checkCardCountExposure && AICheckCardCount())
         {
-            exposureType = ExposureType.CardCountExposure;
-            isExposed = true;
-            roundResults.Add(RoundResult.Lose);
-            result = RoundResult.Lose;
+            exposed = true;
         }
 
 
@@ -736,8 +707,15 @@ public class CardManager : MonoBehaviour
         // 将牌移到场上显示区域并缩小
         MoveCardsToField();
 
-        if (result == RoundResult.Win)
+        if (exposed)
         {
+            roundResults.Add(RoundResult.Lose);
+            return RoundResult.Lose;
+        }
+
+        if (!exposed)
+        {
+            RoundResult result = RoundResult.Win;
             // 计算小局结果
             var (playerMin, playerMax) = GetPlayerPoints();
             var (aiMin, aiMax) = GetAIPoints();
@@ -745,44 +723,45 @@ public class CardManager : MonoBehaviour
             int playerPoints = playerMax <= 21 ? playerMax : playerMin;
             int aiPoints = aiMax <= 21 ? aiMax : aiMin;
 
-            aiCardsText.text = aiPoints.ToString();
+            cardUIManager.aiCardsText.text = aiPoints.ToString();
             // 判断胜负
             if (playerPoints > 21 && aiPoints > 21)
             {
                 result = RoundResult.Draw;
-                endText.text = "双方点数都超过21点，平局";
+                cardUIManager.endText.text = "双方点数都超过21点，平局";
             }
             else if (aiPoints > 21)
             {
                 result = RoundResult.Win; // AI爆牌
-                endText.text = "对手点数都超过21点，获得1分";
+                cardUIManager.endText.text = "对手点数都超过21点，获得1分";
             }
             else if (playerPoints > 21)
             {
                 result = RoundResult.Lose;
-                endText.text = "点数都超过21点，减去1分";
+                cardUIManager.endText.text = "点数都超过21点，减去1分";
             }
             else if (playerPoints > aiPoints)
             {
                 result = RoundResult.Win;
-                endText.text = "点数超过对手，获得1分";
+                cardUIManager.endText.text = "点数超过对手，获得1分";
             }
             else if (aiPoints > playerPoints)
             {
                 result = RoundResult.Lose;
-                endText.text = "点数未超过对手，减去1分";
+                cardUIManager.endText.text = "点数未超过对手，减去1分";
             }
             else
             {
                 result = RoundResult.Draw;
-                endText.text = "点数相同，平局";
+                cardUIManager.endText.text = "点数相同，平局";
             }
 
             roundResults.Add(result);
             Debug.Log($"第{currentRoundIndex}个小局结束：{result} (玩家{playerPoints}点 vs AI{aiPoints}点)");
+            return result;
         }
 
-        return result;
+        return RoundResult.Win;
     }
 
     public int indexScene;
@@ -851,14 +830,14 @@ public class CardManager : MonoBehaviour
         {
             int cardNumber = kvp.Key;
             int count = kvp.Value;
-            int maxCount = DeckConfig.GetMaxCardCount(cardNumber);
+            int maxCount = aiSettings.GetMaxCardCount(cardNumber);
 
             if (count > maxCount)
             {
-                endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
-                               $"（场上{usedCardsCount.GetValueOrDefault(cardNumber, 0)}张+玩家手牌{mineCards.FindAll(c => c.cardNumber == cardNumber).Count}张+" +
-                               $"AI手牌{aiCards.FindAll(c => c.cardNumber == cardNumber).Count}张），" +
-                               $"但最多只有{maxCount}张";
+                cardUIManager.endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
+                                             $"（场上{usedCardsCount.GetValueOrDefault(cardNumber, 0)}张+玩家手牌{mineCards.FindAll(c => c.cardNumber == cardNumber).Count}张+" +
+                                             $"AI手牌{aiCards.FindAll(c => c.cardNumber == cardNumber).Count}张），" +
+                                             $"但最多只有{maxCount}张";
 
                 return true;
             }
@@ -872,7 +851,7 @@ public class CardManager : MonoBehaviour
     /// </summary>
     public bool IsAllRoundsFinished()
     {
-        return currentRoundIndex >= totalRounds;
+        return currentRoundIndex >= aiSettings.roundsPerGame;
     }
 
     /// <summary>
@@ -898,5 +877,37 @@ public class CardManager : MonoBehaviour
         }
 
         return score;
+    }
+
+    /// <summary>
+    /// 在Scene视图中绘制Gizmos
+    /// </summary>
+    private void OnDrawGizmos()
+    {
+        Vector3 size = new Vector3(1, 1, 1);
+
+        if (cardParent != null)
+        {
+            Gizmos.color = Color.white;
+            Gizmos.DrawWireCube(cardParent.position, size);
+        }
+
+        if (AIPos != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(AIPos.position, size);
+        }
+
+        if (MyPos != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireCube(MyPos.position, size);
+        }
+
+        if (SceneCardsPos != null)
+        {
+            Gizmos.color = Color.gray;
+            Gizmos.DrawWireCube(SceneCardsPos.position, size);
+        }
     }
 }

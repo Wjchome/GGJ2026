@@ -5,12 +5,13 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 游戏管理器 - 管理两个独立局的21点游戏
+/// 游戏管理器 
 /// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
-    public CardManager[] cardManagers; // 两个独立的CardManager
+    public CardManager[] cardManagers; // 并行的多个CardManager
+    public LevelConfig levelConfig;
 
     // UI显示
     public Text totalScoreText;
@@ -22,17 +23,17 @@ public class GameManager : MonoBehaviour
     {
         instance = this;
 
-        // 确保有两个CardManager
-        if (cardManagers == null || cardManagers.Length != 2)
+        if (cardManagers == null || cardManagers.Length == 0)
         {
-            Debug.LogError("GameManager需要2个CardManager！");
+            Debug.LogError("GameManager需要至少1个CardManager！");
             return;
         }
-
-        // 初始化两个独立局
-        foreach (CardManager cardManager in cardManagers)
+        
+        // 初始化所有启用的CardManager
+        for (int i = 0; i < cardManagers.Length; i++)
         {
-            cardManager.Init();
+            CardManager cardManager = cardManagers[i];
+            cardManager.Init(levelConfig.aiSettings[i]);
         }
 
         UpdateGameStatus();
@@ -44,19 +45,19 @@ public class GameManager : MonoBehaviour
     /// <param name="card">要转移的卡牌</param>
     /// <param name="fromManager">源CardManager</param>
     /// <param name="toManager">目标CardManager</param>
-    public void TransferCard(CardMono card, CardManager fromManager, CardManager toManager)
+    public bool TransferCard(CardMono card, CardManager fromManager, CardManager toManager)
     {
         // 如果源和目标相同，不处理
         if (fromManager == toManager)
         {
-            return;
+            return false;
         }
 
         // 如果目标CardManager已满，不转移
         if (toManager.myCardNum >= 8)
         {
             Debug.LogWarning("目标CardManager已满，无法转移卡牌");
-            return;
+            return false;
         }
 
         // 从源CardManager移除
@@ -81,6 +82,7 @@ public class GameManager : MonoBehaviour
 
         fromManager.UpdateUIButtons();
         toManager.UpdateUIButtons();
+        return true;
     }
 
     // 注意：暴露检测现在在小局结束时进行，不再需要实时检测
@@ -94,15 +96,8 @@ public class GameManager : MonoBehaviour
         {
             return;
         }
-        
-        foreach (CardManager cardManager in cardManagers)
-        {
-            if (cardManager.IsAllRoundsFinished())
-            {
-                isGameFinished = true;
-                break;
-            }
-        }
+
+        isGameFinished = AreAllActiveTablesFinished();
 
         UpdateGameStatus();
     }
@@ -112,14 +107,20 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void UpdateGameStatus()
     {
-        
         int sum = 0;
         string status = "";
+        int tableIndex = 0;
         foreach (var cardManager in cardManagers)
         {
+            if (cardManager == null || !cardManager.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
             int score = cardManager.GetTotalScore();
-            status += $"局{Array.IndexOf(cardManagers, cardManager) + 1}：{score}分  ";
+            status += $"局{tableIndex + 1}：{score}分  ";
             sum += score;
+            tableIndex++;
         }
 
         totalScoreText.text = status;
@@ -140,6 +141,25 @@ public class GameManager : MonoBehaviour
             gameStatusText.text = $"游戏中... 总分:{sum}";
         }
     }
+    
 
+    private bool AreAllActiveTablesFinished()
+    {
+        bool hasActive = false;
+        foreach (var cardManager in cardManagers)
+        {
+            if (cardManager == null || !cardManager.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
 
+            hasActive = true;
+            if (!cardManager.IsAllRoundsFinished())
+            {
+                return false;
+            }
+        }
+
+        return hasActive;
+    }
 }
