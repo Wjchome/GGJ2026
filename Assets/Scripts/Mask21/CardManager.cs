@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -69,6 +70,9 @@ public class CardManager : MonoBehaviour
         cardUIManager.endBtn.onClick.RemoveAllListeners();
         cardUIManager.endBtn.onClick.AddListener(OnEndRound);
 
+        cardUIManager.sortCardsBtn.onClick.RemoveAllListeners();
+        cardUIManager.sortCardsBtn.onClick.AddListener(OnSortCards);
+
 
         UpdateUIButtons();
     }
@@ -91,7 +95,7 @@ public class CardManager : MonoBehaviour
         var (playerPoints, playerPoints1) = GetPlayerPoints();
         if (playerPoints == playerPoints1)
         {
-            cardUIManager.playerCardsText.text = playerPoints.ToString();
+            cardUIManager.playerCardsText.text = $"点数：{playerPoints}";
             if (playerPoints1 > 21)
             {
                 cardUIManager.playerCardsText.color = Color.red;
@@ -103,7 +107,7 @@ public class CardManager : MonoBehaviour
         }
         else
         {
-            cardUIManager.playerCardsText.text = $"{playerPoints} {playerPoints1}";
+            cardUIManager.playerCardsText.text = $"可能的点数：{playerPoints} {playerPoints1}";
             cardUIManager.playerCardsText.color = Color.white;
         }
     }
@@ -372,21 +376,23 @@ public class CardManager : MonoBehaviour
         RoundResult result = EndRound();
         Debug.Log($"小局结果：{result}");
 
-        // 如果所有小局都完成了，通知GameManager
+        StartNewRound();
+
         if (IsAllRoundsFinished())
         {
             cardUIManager.endBtnText.text = $"单局结束";
+            cardUIManager.endPanel.SetActive(true);
             currentState = GameState.GameOver;
-            GameManager.instance.OnGameFinished();
         }
         else
         {
             cardUIManager.endBtnText.text = $"还剩{aiSettings.roundsPerGame - currentRoundIndex}局";
-            // 开始新的小局
-            StartNewRound();
             // 重置游戏状态
             currentState = GameState.WaitForNextRound;
         }
+
+        GameManager.instance.OnGameFinished();
+
 
         UpdateUIButtons();
     }
@@ -401,6 +407,9 @@ public class CardManager : MonoBehaviour
         {
             cardUIManager.endPanel.SetActive(false);
             currentState = GameState.WaitingForAITurn;
+
+            SendAICard();
+            SendMineCard();
         }
     }
 
@@ -531,6 +540,53 @@ public class CardManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 排序按钮点击事件
+    /// </summary>
+    public void OnSortCards()
+    {
+        SortMineCards();
+        SortSceneCards();
+    }
+
+    /// <summary>
+    /// 排序玩家手牌（按 A, 2, 3, ..., 10, J, Q, K）
+    /// </summary>
+    private void SortMineCards()
+    {
+        // 按照 cardNumber 排序：A(1), 2, 3, ..., 10, J(11), Q(12), K(13)
+        mineCards.Sort((a, b) => a.cardNumber.CompareTo(b.cardNumber));
+        
+        // 重新排列位置
+        RearrangeMineCards();
+    }
+
+    /// <summary>
+    /// 排序场景里的牌（按 A, 2, 3, ..., 10, J, Q, K）
+    /// </summary>
+    private void SortSceneCards()
+    {
+        // 获取所有场景里的牌
+        List<CardMono> sceneCards = new List<CardMono>();
+        foreach (var card in usedCards)
+        {
+            // if (card.cardState == CardState.InScene)
+            // {
+                sceneCards.Add(card);
+            //}
+        }
+
+        // 按照 cardNumber 排序：A(1), 2, 3, ..., 10, J(11), Q(12), K(13)
+        sceneCards.Sort((a, b) => a.cardNumber.CompareTo(b.cardNumber));
+
+        // 重新排列场景牌的位置，从 scenePositions[0] 开始
+        for (int i = 0; i < sceneCards.Count; i++)
+        {
+            sceneCards[i].transform.DOMove(scenePositions[i], 0.3f);
+            sceneCards[i].spriteRenderer.sortingOrder = i;
+        }
+    }
+
+    /// <summary>
     /// 计算卡牌点数（处理A的特殊情况：1或11）
     /// </summary>
     /// <param name="cardList">卡牌列表</param>
@@ -634,7 +690,6 @@ public class CardManager : MonoBehaviour
             return;
         }
 
-        cardUIManager.aiCardsText.text = "";
         currentRoundIndex++;
         cardsDrawnCount = 0;
 
@@ -660,108 +715,148 @@ public class CardManager : MonoBehaviour
     /// </summary>
     private RoundResult EndRound()
     {
-        int cardsPlayedCount = mineCards.Count;
-        bool exposed = false;
-
-        // 检测1：手牌数量暴露
-        if (aiSettings.checkHandCountExposure && cardsPlayedCount != cardsDrawnCount)
-        {
-            cardUIManager.endText.text = $"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌";
-            exposed = true;
-        }
-
-        // 检测2：单牌数量暴露（AI审查：场上牌数量+AI牌数量）
-        if (!exposed && aiSettings.checkCardCountExposure && AICheckCardCount())
-        {
-            exposed = true;
-        }
-
+        // 检测暴露
+        bool exposed = CheckExposure();
 
         // 记录打出的牌（不回归牌堆）
-        foreach (var card in mineCards)
-        {
-            usedCards.Add(card);
-
-            // 统计每种牌的数量
-            if (!usedCardsCount.ContainsKey(card.cardNumber))
-            {
-                usedCardsCount[card.cardNumber] = 0;
-            }
-
-            usedCardsCount[card.cardNumber]++;
-        }
-
-        foreach (var card in aiCards)
-        {
-            usedCards.Add(card);
-
-            // 统计每种牌的数量
-            if (!usedCardsCount.ContainsKey(card.cardNumber))
-            {
-                usedCardsCount[card.cardNumber] = 0;
-            }
-
-            usedCardsCount[card.cardNumber]++;
-        }
+        RecordPlayedCards();
 
         // 将牌移到场上显示区域并缩小
         MoveCardsToField();
 
+        var (aiMin, aiMax) = GetAIPoints();
+        int aiPoints = aiMax <= 21 ? aiMax : aiMin;
+        cardUIManager.aiCardsText.text = $"对方点数 :{aiPoints}";
+
+        // 如果暴露，直接返回失败
         if (exposed)
         {
             roundResults.Add(RoundResult.Lose);
             return RoundResult.Lose;
         }
 
-        if (!exposed)
+        // 计算小局胜负结果
+        return CalculateRoundResult();
+    }
+
+    /// <summary>
+    /// 检测是否暴露
+    /// </summary>
+    private bool CheckExposure()
+    {
+        // 检测1：手牌数量暴露
+        if (aiSettings.checkHandCountExposure)
         {
-            RoundResult result = RoundResult.Win;
-            // 计算小局结果
-            var (playerMin, playerMax) = GetPlayerPoints();
-            var (aiMin, aiMax) = GetAIPoints();
-
-            int playerPoints = playerMax <= 21 ? playerMax : playerMin;
-            int aiPoints = aiMax <= 21 ? aiMax : aiMin;
-
-            cardUIManager.aiCardsText.text = aiPoints.ToString();
-            // 判断胜负
-            if (playerPoints > 21 && aiPoints > 21)
+            int cardsPlayedCount = mineCards.Count;
+            if (cardsPlayedCount != cardsDrawnCount)
             {
-                result = RoundResult.Draw;
-                cardUIManager.endText.text = "双方点数都超过21点，平局";
+                cardUIManager.endText.text = $"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌";
+                return true;
             }
-            else if (aiPoints > 21)
-            {
-                result = RoundResult.Win; // AI爆牌
-                cardUIManager.endText.text = "对手点数都超过21点，获得1分";
-            }
-            else if (playerPoints > 21)
-            {
-                result = RoundResult.Lose;
-                cardUIManager.endText.text = "点数都超过21点，减去1分";
-            }
-            else if (playerPoints > aiPoints)
-            {
-                result = RoundResult.Win;
-                cardUIManager.endText.text = "点数超过对手，获得1分";
-            }
-            else if (aiPoints > playerPoints)
-            {
-                result = RoundResult.Lose;
-                cardUIManager.endText.text = "点数未超过对手，减去1分";
-            }
-            else
-            {
-                result = RoundResult.Draw;
-                cardUIManager.endText.text = "点数相同，平局";
-            }
-
-            roundResults.Add(result);
-            Debug.Log($"第{currentRoundIndex}个小局结束：{result} (玩家{playerPoints}点 vs AI{aiPoints}点)");
-            return result;
         }
 
-        return RoundResult.Win;
+        // 检测2：单牌数量暴露
+        if (aiSettings.cardCountAuditMode != CardCountAuditMode.None)
+        {
+            if (aiSettings.cardCountAuditMode == CardCountAuditMode.AllCards)
+            {
+                // 审查全部卡牌（场上牌+玩家手牌+AI手牌）
+                if (AICheckAllCards())
+                {
+                    return true;
+                }
+            }
+            else if (aiSettings.cardCountAuditMode == CardCountAuditMode.PlayerCardsOnly)
+            {
+                // 只审查玩家卡牌（场上牌+玩家手牌，不包括AI手牌）
+                if (AICheckPlayerCardsOnly())
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 记录打出的牌（不回归牌堆）
+    /// </summary>
+    private void RecordPlayedCards()
+    {
+        // 记录玩家打出的牌
+        foreach (var card in mineCards)
+        {
+            usedCards.Add(card);
+            if (!usedCardsCount.ContainsKey(card.cardNumber))
+            {
+                usedCardsCount[card.cardNumber] = 0;
+            }
+
+            usedCardsCount[card.cardNumber]++;
+        }
+
+        // 记录AI打出的牌
+        foreach (var card in aiCards)
+        {
+            usedCards.Add(card);
+            if (!usedCardsCount.ContainsKey(card.cardNumber))
+            {
+                usedCardsCount[card.cardNumber] = 0;
+            }
+
+            usedCardsCount[card.cardNumber]++;
+        }
+    }
+
+    /// <summary>
+    /// 计算小局胜负结果
+    /// </summary>
+    private RoundResult CalculateRoundResult()
+    {
+        var (playerMin, playerMax) = GetPlayerPoints();
+        var (aiMin, aiMax) = GetAIPoints();
+
+        int playerPoints = playerMax <= 21 ? playerMax : playerMin;
+        int aiPoints = aiMax <= 21 ? aiMax : aiMin;
+
+
+        RoundResult result;
+        // 判断胜负
+        if (playerPoints > 21 && aiPoints > 21)
+        {
+            result = RoundResult.Draw;
+            cardUIManager.endText.text = "双方点数都超过21点，平局";
+        }
+        else if (aiPoints > 21)
+        {
+            result = RoundResult.Win; // AI爆牌
+            cardUIManager.endText.text = "对手点数超过21点，获得1分";
+        }
+        else if (playerPoints > 21)
+        {
+            result = RoundResult.Lose;
+            cardUIManager.endText.text = "点数都超过21点，减去1分";
+        }
+        else if (playerPoints > aiPoints)
+        {
+            result = RoundResult.Win;
+            cardUIManager.endText.text = "点数超过对手，获得1分";
+        }
+        else if (aiPoints > playerPoints)
+        {
+            result = RoundResult.Lose;
+            cardUIManager.endText.text = "点数未超过对手，减去1分";
+        }
+        else
+        {
+            result = RoundResult.Draw;
+            cardUIManager.endText.text = "点数相同，平局";
+        }
+
+        roundResults.Add(result);
+        Debug.Log($"第{currentRoundIndex}个小局结束：{result} (玩家{playerPoints}点 vs AI{aiPoints}点)");
+        return result;
     }
 
     public int indexScene;
@@ -791,9 +886,9 @@ public class CardManager : MonoBehaviour
     }
 
     /// <summary>
-    /// AI审查牌型（检测场上牌数量+AI牌数量）
+    /// AI审查全部卡牌（场上牌+玩家手牌+AI手牌）
     /// </summary>
-    private bool AICheckCardCount()
+    private bool AICheckAllCards()
     {
         Dictionary<int, int> totalCardCount = new Dictionary<int, int>();
 
@@ -814,7 +909,7 @@ public class CardManager : MonoBehaviour
             totalCardCount[card.cardNumber]++;
         }
 
-        // 统计AI手牌（AI审查时会检查自己的牌）
+        // 统计AI手牌
         foreach (var card in aiCards)
         {
             if (!totalCardCount.ContainsKey(card.cardNumber))
@@ -826,6 +921,47 @@ public class CardManager : MonoBehaviour
         }
 
         // 检查是否有牌超过限制
+        return CheckCardCountViolation(totalCardCount, includeAICards: true);
+    }
+
+    /// <summary>
+    /// AI只审查玩家卡牌（只检查玩家出的牌，统计场上牌+AI手牌+玩家手牌）
+    /// </summary>
+    private bool AICheckPlayerCardsOnly()
+    {
+        Dictionary<int, int> totalCardCount = new Dictionary<int, int>();
+
+        // 先统计玩家手牌中每种牌的数量
+        foreach (var card in mineCards)
+        {
+            if (!totalCardCount.ContainsKey(card.cardNumber))
+            {
+                totalCardCount[card.cardNumber] = 0;
+            }
+
+            totalCardCount[card.cardNumber]++;
+        }
+
+        // 对于玩家出的每种牌，加上场上已有的该数字的牌和AI手牌中该数字的牌
+        foreach (var cardNumber in totalCardCount.Keys.ToList())
+        {
+            // 加上场上已有的该数字的牌
+            totalCardCount[cardNumber] += usedCardsCount.GetValueOrDefault(cardNumber, 0);
+
+            // 加上AI手牌中该数字的牌
+            int aiHandCount = aiCards.FindAll(c => c.cardNumber == cardNumber).Count;
+            totalCardCount[cardNumber] += aiHandCount;
+        }
+
+        // 检查是否有牌超过限制
+        return CheckCardCountViolation(totalCardCount, includeAICards: true);
+    }
+
+    /// <summary>
+    /// 检查卡牌数量是否违反限制
+    /// </summary>
+    private bool CheckCardCountViolation(Dictionary<int, int> totalCardCount, bool includeAICards)
+    {
         foreach (var kvp in totalCardCount)
         {
             int cardNumber = kvp.Key;
@@ -834,10 +970,22 @@ public class CardManager : MonoBehaviour
 
             if (count > maxCount)
             {
-                cardUIManager.endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
-                                             $"（场上{usedCardsCount.GetValueOrDefault(cardNumber, 0)}张+玩家手牌{mineCards.FindAll(c => c.cardNumber == cardNumber).Count}张+" +
-                                             $"AI手牌{aiCards.FindAll(c => c.cardNumber == cardNumber).Count}张），" +
-                                             $"但最多只有{maxCount}张";
+                int fieldCount = usedCardsCount.GetValueOrDefault(cardNumber, 0);
+                int playerHandCount = mineCards.FindAll(c => c.cardNumber == cardNumber).Count;
+
+                if (includeAICards)
+                {
+                    int aiHandCount = aiCards.FindAll(c => c.cardNumber == cardNumber).Count;
+                    cardUIManager.endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
+                                                 $"（场上{fieldCount}张+玩家手牌{playerHandCount}张+AI手牌{aiHandCount}张），" +
+                                                 $"但最多只有{maxCount}张";
+                }
+                else
+                {
+                    cardUIManager.endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
+                                                 $"（场上{fieldCount}张+玩家手牌{playerHandCount}张），" +
+                                                 $"但最多只有{maxCount}张";
+                }
 
                 return true;
             }

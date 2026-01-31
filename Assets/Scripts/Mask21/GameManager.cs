@@ -145,21 +145,14 @@ public class GameManager : MonoBehaviour
 
     private bool AreAllActiveTablesFinished()
     {
-        bool hasActive = false;
         foreach (var cardManager in cardManagers)
         {
-            if (cardManager == null || !cardManager.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            hasActive = true;
             if (!cardManager.IsAllRoundsFinished())
             {
                 return false;
             }
         }
 
-        return hasActive;
+        return true;
     }
 }

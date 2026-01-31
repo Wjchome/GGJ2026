@@ -6,6 +6,7 @@ public class CardUIManager : MonoBehaviour
     public Button playerDrawCardBtn; // 玩家摸牌按钮
     public Button playerStandBtn; // 玩家不摸按钮
     public Button revealCardsBtn; // 开牌按钮
+    public Button sortCardsBtn; // 排序按钮
     public Text playerCardsText;
     public Text aiCardsText;
 
