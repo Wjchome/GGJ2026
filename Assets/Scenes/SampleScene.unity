@@ -155,6 +155,7 @@ Transform:
   - {fileID: 524234670}
   - {fileID: 1031657004}
   - {fileID: 1279317307}
+  - {fileID: 1463541076}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &136195394
@@ -276,6 +277,9 @@ MonoBehaviour:
   - {fileID: 21300000, guid: c132ee6317fec438ab8b663cddb66bc7, type: 3}
   - {fileID: 21300000, guid: 5701bb5f172604d87a02915fc878240a, type: 3}
   - {fileID: 21300000, guid: 8a97723f86688449bb057c7ac4adfd51, type: 3}
+  - {fileID: 21300000, guid: e2b1da7c86bd84ceca3474f69d01dee3, type: 3}
+  - {fileID: 21300000, guid: 464951ac3cbc1412687cdeef8402bef8, type: 3}
+  - {fileID: 21300000, guid: 148b309cb814f4a6fbd45a034e44ff47, type: 3}
   cardBack: {fileID: 21300000, guid: 3f35cdd1aba3c45f38824ee284e85ff0, type: 3}
   cards: []
   currentState: 0
@@ -283,7 +287,9 @@ MonoBehaviour:
   cardParent: {fileID: 727424898}
   AIPos: {fileID: 1707439658}
   MyPos: {fileID: 1506894529}
+  SceneCardsPos: {fileID: 699423790}
   f: 0.1
+  playedCardScale: 0.7
   playerDrawCardBtn: {fileID: 2012349395}
   playerStandBtn: {fileID: 325395753}
   revealCardsBtn: {fileID: 2137821585}
@@ -295,7 +301,11 @@ MonoBehaviour:
   mineCards: []
   aiCards: []
   aiThreshold: 17
+  exposureType: 0
+  isExposed: 0
+  fff: 0.7
   myCardNum: 0
+  indexScene: 0
 --- !u!4 &267402958
 Transform:
   m_ObjectHideFlags: 0
@@ -780,6 +790,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 73411097}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &699423789
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 699423790}
+  m_Layer: 0
+  m_Name: ScenePos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &699423790
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699423789}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -11.42, y: 1.09, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2074462376}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &718270227
 GameObject:
@@ -1745,6 +1786,8 @@ MonoBehaviour:
   cardManagers:
   - {fileID: 267402957}
   - {fileID: 1781735333}
+  totalScoreText: {fileID: 0}
+  gameStatusText: {fileID: 0}
 --- !u!4 &1199123287
 Transform:
   m_ObjectHideFlags: 0
@@ -1870,6 +1913,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1405294828}
   m_CullTransparentMesh: 1
+--- !u!1 &1463541075
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1463541076}
+  m_Layer: 0
+  m_Name: ScenePos (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1463541076
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1463541075}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.94, y: 1.62, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 73411097}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1506894528
 GameObject:
   m_ObjectHideFlags: 0
@@ -2051,6 +2125,9 @@ MonoBehaviour:
   - {fileID: 21300000, guid: c132ee6317fec438ab8b663cddb66bc7, type: 3}
   - {fileID: 21300000, guid: 5701bb5f172604d87a02915fc878240a, type: 3}
   - {fileID: 21300000, guid: 8a97723f86688449bb057c7ac4adfd51, type: 3}
+  - {fileID: 21300000, guid: e2b1da7c86bd84ceca3474f69d01dee3, type: 3}
+  - {fileID: 21300000, guid: 464951ac3cbc1412687cdeef8402bef8, type: 3}
+  - {fileID: 21300000, guid: 148b309cb814f4a6fbd45a034e44ff47, type: 3}
   cardBack: {fileID: 21300000, guid: 3f35cdd1aba3c45f38824ee284e85ff0, type: 3}
   cards: []
   currentState: 0
@@ -2058,7 +2135,9 @@ MonoBehaviour:
   cardParent: {fileID: 524234670}
   AIPos: {fileID: 1031657004}
   MyPos: {fileID: 1279317307}
+  SceneCardsPos: {fileID: 1463541076}
   f: 0.1
+  playedCardScale: 0.7
   playerDrawCardBtn: {fileID: 1043845317}
   playerStandBtn: {fileID: 1129404862}
   revealCardsBtn: {fileID: 1111701537}
@@ -2070,7 +2149,11 @@ MonoBehaviour:
   mineCards: []
   aiCards: []
   aiThreshold: 17
+  exposureType: 0
+  isExposed: 0
+  fff: 0.7
   myCardNum: 0
+  indexScene: 0
 --- !u!4 &1781735334
 Transform:
   m_ObjectHideFlags: 0
@@ -2403,6 +2486,7 @@ Transform:
   - {fileID: 727424898}
   - {fileID: 1707439658}
   - {fileID: 1506894529}
+  - {fileID: 699423790}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2137821583
