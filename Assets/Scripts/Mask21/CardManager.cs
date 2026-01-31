@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 public class CardManager : MonoBehaviour
@@ -10,17 +11,25 @@ public class CardManager : MonoBehaviour
     public Sprite cardBack;
 
     public List<CardMono> cards;
+    
 
     public CardMono cardPrefab;
     public Transform cardParent;
 
+    public Transform AIPos;
+    public Transform MyPos;
+
     public float f;
 
-    public void Start()
+
+    public Button getCardBtn;
+
+    public void Init()
     {
         var config = DeckConfig.CardNumbers;
         var list = ExpandCardDictionary(config);
         ShuffleCardList(list);
+        cardIndex = list.Count - 1;
         for (int i = 0; i < list.Count; i++)
         {
             var cardNum = list[i];
@@ -33,13 +42,11 @@ public class CardManager : MonoBehaviour
             card.spriteRenderer.sortingOrder = i;
             cards.Add(card);
         }
+        
+        getCardBtn.onClick.RemoveAllListeners();
+        getCardBtn.onClick.AddListener(() => SendMineCard());
     }
-
-    /// <summary>
-    /// 将卡牌配置的Dictionary展开为完整列表（键=卡牌数字，值=数量）
-    /// </summary>
-    /// <param name="cardDict">DeckConfig中的卡牌配置字典</param>
-    /// <returns>包含所有卡牌的原始列表（未打乱）</returns>
+    
     private List<int> ExpandCardDictionary(Dictionary<int, int> cardDict)
     {
         List<int> result = new List<int>();
@@ -56,11 +63,7 @@ public class CardManager : MonoBehaviour
 
         return result;
     }
-
-    /// <summary>
-    /// Fisher-Yates（费雪耶茨）洗牌算法：原地打乱卡牌列表，公平无偏置
-    /// </summary>
-    /// <param name="cardList">需要打乱的卡牌列表</param>
+    
     private void ShuffleCardList(List<int> cardList)
     {
         // 从列表末尾向前遍历，逐个交换随机位置的元素
@@ -85,5 +88,34 @@ public class CardManager : MonoBehaviour
     public Sprite GetBack()
     {
         return cardBack;
+    }
+
+
+    public int cardIndex;
+    public int AICardNum;
+    public float ff;
+    public void SendAICard()
+    { 
+        cards[cardIndex].transform.position = (Vector2)AIPos.position+new Vector2(0,-AICardNum*ff);
+        cards[cardIndex].spriteRenderer.sortingOrder = AICardNum;
+        cards[cardIndex].isBack = true;
+        cards[cardIndex].cardState = CardState.AI;
+        cards[cardIndex].ChangeSprite();
+        cardIndex--;
+        AICardNum++;
+    }
+
+
+
+    public int myCardNum;
+    public void SendMineCard()
+    {
+        cards[cardIndex].transform.position = (Vector2)MyPos.position+new Vector2(0,-myCardNum*ff);
+        cards[cardIndex].spriteRenderer.sortingOrder =myCardNum;
+        cards[cardIndex].isBack = false;
+        cards[cardIndex].cardState = CardState.Mine;
+        cards[cardIndex].ChangeSprite();
+        cardIndex--;
+        myCardNum++;
     }
 }
