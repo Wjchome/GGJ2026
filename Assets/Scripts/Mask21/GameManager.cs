@@ -11,34 +11,33 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
     public CardManager[] cardManagers; // 两个独立的CardManager
-    
+
     // UI显示
     public Text totalScoreText;
     public Text gameStatusText;
-    
-    // 游戏状态
-    private bool isGameFinished = false;
+
+    public bool isGameFinished = false;
 
     public void Start()
     {
         instance = this;
-        
+
         // 确保有两个CardManager
         if (cardManagers == null || cardManagers.Length != 2)
         {
             Debug.LogError("GameManager需要2个CardManager！");
             return;
         }
-        
+
         // 初始化两个独立局
         foreach (CardManager cardManager in cardManagers)
         {
             cardManager.Init();
         }
-        
+
         UpdateGameStatus();
     }
-    
+
     /// <summary>
     /// 将卡牌从一个CardManager转移到另一个CardManager
     /// </summary>
@@ -52,20 +51,20 @@ public class GameManager : MonoBehaviour
         {
             return;
         }
-        
+
         // 如果目标CardManager已满，不转移
         if (toManager.myCardNum >= 8)
         {
             Debug.LogWarning("目标CardManager已满，无法转移卡牌");
             return;
         }
-        
+
         // 从源CardManager移除
         if (fromManager != null)
         {
             fromManager.RemoveMineCard(card);
         }
-        
+
         // 添加到目标CardManager
         if (toManager != null)
         {
@@ -83,9 +82,9 @@ public class GameManager : MonoBehaviour
         fromManager.UpdateUIButtons();
         toManager.UpdateUIButtons();
     }
-    
+
     // 注意：暴露检测现在在小局结束时进行，不再需要实时检测
-    
+
     /// <summary>
     /// 游戏结束时的处理
     /// </summary>
@@ -96,65 +95,51 @@ public class GameManager : MonoBehaviour
             return;
         }
         
-        isGameFinished = true;
-        
-        // 计算总分数
-        int totalScore = GetTotalScore();
-        
-        // 判断胜利
-        bool isVictory = totalScore > 0;
-        
-        Debug.Log($"游戏结束！总分数：{totalScore}，结果：{(isVictory ? "胜利" : "失败")}");
-        
+        foreach (CardManager cardManager in cardManagers)
+        {
+            if (cardManager.IsAllRoundsFinished())
+            {
+                isGameFinished = true;
+                break;
+            }
+        }
+
         UpdateGameStatus();
     }
-    
-    /// <summary>
-    /// 获取总分数
-    /// </summary>
-    public int GetTotalScore()
-    {
-        int totalScore = 0;
-        
-        foreach (var cardManager in cardManagers)
-        {
-            totalScore += cardManager.GetTotalScore();
-        }
-        
-        return totalScore;
-    }
-    
+
     /// <summary>
     /// 更新游戏状态显示
     /// </summary>
     private void UpdateGameStatus()
     {
-        if (totalScoreText != null)
+        
+        int sum = 0;
+        string status = "";
+        foreach (var cardManager in cardManagers)
         {
-            int totalScore = GetTotalScore();
-            totalScoreText.text = $"总分数：{totalScore}";
-            
-            if (isGameFinished)
+            int score = cardManager.GetTotalScore();
+            status += $"局{Array.IndexOf(cardManagers, cardManager) + 1}：{score}分  ";
+            sum += score;
+        }
+
+        totalScoreText.text = status;
+
+        if (isGameFinished)
+        {
+            if (sum > 0)
             {
-                bool isVictory = totalScore > 0;
-                totalScoreText.text += $" - {(isVictory ? "胜利！" : "失败...")}";
+                gameStatusText.text = $"你成功了... 总分:{sum}";
+            }
+            else
+            {
+                gameStatusText.text = $"你失败了... 总分:{sum}";
             }
         }
-        
-        if (gameStatusText != null)
+        else
         {
-            string status = "";
-            foreach (var cardManager in cardManagers)
-            {
-                int score = cardManager.GetTotalScore();
-                status += $"局{Array.IndexOf(cardManagers, cardManager) + 1}：{score}分  ";
-            }
-            gameStatusText.text = status;
+            gameStatusText.text = $"游戏中... 总分:{sum}";
         }
     }
 
-    private void Update()
-    {
-        // 可以在这里添加实时更新
-    }
+
 }

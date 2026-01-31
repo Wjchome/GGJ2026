@@ -11,6 +11,7 @@ public enum GameState
     WaitingForAISolo, //仅ai
     WaitingForPlayerTurn, // 等待玩家回合
     BothStand, // 双方都不摸牌，可以开牌
+    WaitForNextRound,
     GameOver // 游戏结束
 }
 
@@ -55,7 +56,6 @@ public class CardManager : MonoBehaviour
     public float f; //堆叠偏移
     public float playedCardScale = 0.7f; // 场上牌的缩放比例
 
-    
 
     // UI按钮
     public Button playerDrawCardBtn; // 玩家摸牌按钮
@@ -63,6 +63,11 @@ public class CardManager : MonoBehaviour
     public Button revealCardsBtn; // 开牌按钮
     public Text playerCardsText;
     public Text aiCardsText;
+
+    public GameObject endPanel;
+    public Button endBtn;
+    public Text endText;
+    public Text endBtnText;
 
 
     private void SetupUIButtons()
@@ -80,6 +85,9 @@ public class CardManager : MonoBehaviour
 
         revealCardsBtn.onClick.RemoveAllListeners();
         revealCardsBtn.onClick.AddListener(OnRevealCards);
+
+        endBtn.onClick.RemoveAllListeners();
+        endBtn.onClick.AddListener(OnEndRound);
 
 
         UpdateUIButtons();
@@ -229,10 +237,22 @@ public class CardManager : MonoBehaviour
         StartCoroutine(GameLoop());
     }
 
+    public void WaitForNextRound()
+    {
+        endPanel.SetActive(true);
+    }
+
     private IEnumerator GameLoop()
     {
         while (currentState != GameState.GameOver)
         {
+            if (currentState == GameState.WaitForNextRound)
+            {
+                WaitForNextRound();
+                yield return new WaitUntil(() => currentState != GameState.WaitForNextRound);
+            }
+
+
             // AI回合
             if (currentState == GameState.WaitingForAITurn ||
                 currentState == GameState.WaitingForAISolo)
@@ -363,20 +383,34 @@ public class CardManager : MonoBehaviour
         // 如果所有小局都完成了，通知GameManager
         if (IsAllRoundsFinished())
         {
+            endBtnText.text = $"单局结束";
             currentState = GameState.GameOver;
-            //GameManager.instance?.OnGameFinished();
+            GameManager.instance.OnGameFinished();
         }
         else
         {
+            endBtnText.text = $"还剩{totalRounds - currentRoundIndex}局";
             // 开始新的小局
             StartNewRound();
             // 重置游戏状态
-            currentState = GameState.WaitingForAITurn;
+            currentState = GameState.WaitForNextRound;
         }
 
         UpdateUIButtons();
     }
 
+
+    public void OnEndRound()
+    {
+        if (IsAllRoundsFinished())
+        {
+            
+        }
+        else
+        {
+            endPanel.SetActive(false);
+        }
+    }
 
     public float fff;
 
@@ -620,6 +654,7 @@ public class CardManager : MonoBehaviour
             return;
         }
 
+        aiCardsText.text = "";
         currentRoundIndex++;
         cardsDrawnCount = 0;
         exposureType = ExposureType.None;
@@ -649,7 +684,6 @@ public class CardManager : MonoBehaviour
     {
         RoundResult result = RoundResult.Win;
 
-        // 小局结束时检测暴露
         int cardsPlayedCount = mineCards.Count;
 
         // 检测1：手牌数量暴露
@@ -657,7 +691,7 @@ public class CardManager : MonoBehaviour
         {
             exposureType = ExposureType.HandCountExposure;
             isExposed = true;
-            Debug.Log($"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌");
+            endText.text = $"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌";
             roundResults.Add(RoundResult.Lose);
             result = RoundResult.Lose;
         }
@@ -667,7 +701,6 @@ public class CardManager : MonoBehaviour
         {
             exposureType = ExposureType.CardCountExposure;
             isExposed = true;
-            Debug.LogWarning($"单牌数量暴露！");
             roundResults.Add(RoundResult.Lose);
             result = RoundResult.Lose;
         }
@@ -712,31 +745,37 @@ public class CardManager : MonoBehaviour
             int playerPoints = playerMax <= 21 ? playerMax : playerMin;
             int aiPoints = aiMax <= 21 ? aiMax : aiMin;
 
-
+            aiCardsText.text = aiPoints.ToString();
             // 判断胜负
             if (playerPoints > 21 && aiPoints > 21)
             {
                 result = RoundResult.Draw;
+                endText.text = "双方点数都超过21点，平局";
             }
             else if (aiPoints > 21)
             {
                 result = RoundResult.Win; // AI爆牌
+                endText.text = "对手点数都超过21点，获得1分";
             }
             else if (playerPoints > 21)
             {
                 result = RoundResult.Lose;
+                endText.text = "点数都超过21点，减去1分";
             }
             else if (playerPoints > aiPoints)
             {
                 result = RoundResult.Win;
+                endText.text = "点数超过对手，获得1分";
             }
             else if (aiPoints > playerPoints)
             {
                 result = RoundResult.Lose;
+                endText.text = "点数未超过对手，减去1分";
             }
             else
             {
                 result = RoundResult.Draw;
+                endText.text = "点数相同，平局";
             }
 
             roundResults.Add(result);
@@ -816,8 +855,11 @@ public class CardManager : MonoBehaviour
 
             if (count > maxCount)
             {
-                Debug.LogWarning(
-                    $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张（场上{usedCardsCount.GetValueOrDefault(cardNumber, 0)}张+玩家手牌{mineCards.FindAll(c => c.cardNumber == cardNumber).Count}张+AI手牌{aiCards.FindAll(c => c.cardNumber == cardNumber).Count}张），但最多只有{maxCount}张");
+                endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
+                               $"（场上{usedCardsCount.GetValueOrDefault(cardNumber, 0)}张+玩家手牌{mineCards.FindAll(c => c.cardNumber == cardNumber).Count}张+" +
+                               $"AI手牌{aiCards.FindAll(c => c.cardNumber == cardNumber).Count}张），" +
+                               $"但最多只有{maxCount}张";
+
                 return true;
             }
         }
@@ -828,7 +870,7 @@ public class CardManager : MonoBehaviour
     /// <summary>
     /// 是否所有小局都已完成
     /// </summary>
-    private bool IsAllRoundsFinished()
+    public bool IsAllRoundsFinished()
     {
         return currentRoundIndex >= totalRounds;
     }
