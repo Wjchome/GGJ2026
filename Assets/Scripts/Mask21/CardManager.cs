@@ -79,8 +79,8 @@ public class CardManager : MonoBehaviour
         cardUIManager.closeStrategyBtn.onClick.RemoveAllListeners();
         cardUIManager.closeStrategyBtn.onClick.AddListener(OnCloseStrategy);
 
-        // 初始化策略面板为关闭状态
-        cardUIManager.strategyPanel.SetActive(false);
+        OnShowStrategy();
+
 
         UpdateUIButtons();
     }

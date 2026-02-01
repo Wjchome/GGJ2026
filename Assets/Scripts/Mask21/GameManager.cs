@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -16,6 +18,7 @@ public class GameManager : MonoBehaviour
     // UI显示
     public Text totalScoreText;
     public Text gameStatusText;
+    public Button backBtn;
 
     public bool isGameFinished = false;
 
@@ -37,6 +40,8 @@ public class GameManager : MonoBehaviour
         }
 
         UpdateGameStatus();
+        
+        backBtn.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -135,6 +140,12 @@ public class GameManager : MonoBehaviour
             {
                 gameStatusText.text = $"你失败了... 总分:{sum}";
             }
+            gameStatusText.GetComponent<RectTransform>().DOAnchorPos(new Vector2(0f, 280f), 0.5f);
+            totalScoreText.GetComponent<RectTransform>().DOAnchorPos(new Vector2(0f, 230f), 0.5f);
+            backBtn.gameObject.SetActive(true);
+            backBtn.onClick.RemoveAllListeners();
+            backBtn.onClick.AddListener(() => { SceneManager.LoadScene("Enter"); });
+            
         }
         else
         {
