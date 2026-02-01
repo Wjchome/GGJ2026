@@ -13,7 +13,10 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
     public CardManager[] cardManagers; // 并行的多个CardManager
-    public LevelConfig levelConfig;
+    public LevelConfig levelConfig; // 编辑器中的默认配置（如果菜单没有选择，则使用此配置）
+
+    // 从菜单选择的关卡配置
+    public static LevelConfig selectedLevelConfig;
 
     // UI显示
     public Text totalScoreText;
@@ -31,12 +34,45 @@ public class GameManager : MonoBehaviour
             Debug.LogError("GameManager需要至少1个CardManager！");
             return;
         }
+
+        // 优先使用从菜单选择的配置，如果没有则使用编辑器中的配置
+        LevelConfig configToUse = selectedLevelConfig != null ? selectedLevelConfig : levelConfig;
+        
+        if (configToUse == null)
+        {
+            Debug.LogError("GameManager需要LevelConfig配置！");
+            return;
+        }
+
+        if (configToUse.aiSettings == null || configToUse.aiSettings.Count == 0)
+        {
+            Debug.LogError("LevelConfig的aiSettings为空！");
+            return;
+        }
+
+        if (configToUse.aiSettings.Count > cardManagers.Length)
+        {
+            Debug.LogWarning($"LevelConfig配置了{configToUse.aiSettings.Count}个AI，但只有{cardManagers.Length}个CardManager！");
+        }
         
         // 初始化所有启用的CardManager
-        for (int i = 0; i < cardManagers.Length; i++)
+        int initCount = Mathf.Min(configToUse.aiSettings.Count, cardManagers.Length);
+        for (int i = 0; i < initCount; i++)
         {
             CardManager cardManager = cardManagers[i];
-            cardManager.Init(levelConfig.aiSettings[i]);
+            if (cardManager != null)
+            {
+                cardManager.Init(configToUse.aiSettings[i]);
+            }
+        }
+
+        // 禁用多余的CardManager
+        for (int i = initCount; i < cardManagers.Length; i++)
+        {
+            if (cardManagers[i] != null)
+            {
+                cardManagers[i].gameObject.SetActive(false);
+            }
         }
 
         UpdateGameStatus();

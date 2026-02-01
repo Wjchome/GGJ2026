@@ -23,7 +23,8 @@ public enum RoundResult
 {
     Win, // 胜利 +1
     Draw, // 平局 0
-    Lose // 失败 -1
+    Lose, // 失败 -1
+    Exposed // 暴露 -2
 }
 
 
@@ -863,11 +864,11 @@ public class CardManager : MonoBehaviour
         int aiPoints = aiMax <= 21 ? aiMax : aiMin;
         cardUIManager.aiCardsText.text = $"对方点数 :{aiPoints}";
 
-        // 如果暴露，直接返回失败
+        // 如果暴露，返回暴露结果
         if (exposed)
         {
-            roundResults.Add(RoundResult.Lose);
-            return RoundResult.Lose;
+            roundResults.Add(RoundResult.Exposed);
+            return RoundResult.Exposed;
         }
 
         // 计算小局胜负结果
@@ -885,7 +886,7 @@ public class CardManager : MonoBehaviour
             int cardsPlayedCount = mineCards.Count;
             if (cardsPlayedCount != cardsDrawnCount)
             {
-                cardUIManager.endText.text = $"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌";
+                cardUIManager.endText.text = $"手牌数量暴露！摸了{cardsDrawnCount}张牌，但打出了{cardsPlayedCount}张牌，扣除2分";
                 return true;
             }
         }
@@ -971,7 +972,7 @@ public class CardManager : MonoBehaviour
         else if (playerPoints > 21)
         {
             result = RoundResult.Lose;
-            cardUIManager.endText.text = "点数都超过21点，减去1分";
+            cardUIManager.endText.text = "点数超过21点，扣除1分";
         }
         else if (playerPoints > aiPoints)
         {
@@ -981,7 +982,7 @@ public class CardManager : MonoBehaviour
         else if (aiPoints > playerPoints)
         {
             result = RoundResult.Lose;
-            cardUIManager.endText.text = "点数未超过对手，减去1分";
+            cardUIManager.endText.text = "点数未超过对手，扣除1分";
         }
         else
         {
@@ -1113,13 +1114,13 @@ public class CardManager : MonoBehaviour
                     int aiHandCount = aiCards.FindAll(c => c.cardNumber == cardNumber).Count;
                     cardUIManager.endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
                                                  $"（场上{fieldCount}张+玩家手牌{playerHandCount}张+AI手牌{aiHandCount}张），" +
-                                                 $"但最多只有{maxCount}张";
+                                                 $"但最多只有{maxCount}张，扣除2分";
                 }
                 else
                 {
                     cardUIManager.endText.text = $"AI审查发现单牌数量暴露！牌{cardNumber}总共{count}张" +
                                                  $"（场上{fieldCount}张+玩家手牌{playerHandCount}张），" +
-                                                 $"但最多只有{maxCount}张";
+                                                 $"但最多只有{maxCount}张，扣除2分";
                 }
 
                 return true;
@@ -1154,7 +1155,10 @@ public class CardManager : MonoBehaviour
                     score += 0;
                     break;
                 case RoundResult.Lose:
-                    score -= 1;
+                    score -= 1; // 失败扣1分
+                    break;
+                case RoundResult.Exposed:
+                    score -= 2; // 暴露扣2分
                     break;
             }
         }
