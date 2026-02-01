@@ -11,6 +11,7 @@ public class MenuManager : MonoBehaviour
     [Header("UI组件")] public Button exitGameBtn; // 退出游戏按钮
     public Button creditsBtn; // 制作者按钮
     public List<Button> levelButtons = new List<Button>(); // 5个关卡按钮
+    public List<Image> levelImage = new List<Image>(); // 5个关卡按钮
 
     [Header("制作者面板")] public GameObject creditsPanel; // 制作者面板
     public Button closeCreditsBtn; // 关闭制作者面板按钮
@@ -62,6 +63,17 @@ public class MenuManager : MonoBehaviour
                 int levelIndex = i; // 闭包需要局部变量
                 levelButtons[i].onClick.RemoveAllListeners();
                 levelButtons[i].onClick.AddListener(() => OnSelectLevel(levelIndex));
+                Debug.Log(levelConfigNames[levelIndex].name);
+               var a= PlayerPrefs.GetInt(levelConfigNames[i].name);
+               if (a != 0)
+               {
+                   levelImage[i].gameObject.SetActive(true);
+               }
+               else
+               {
+                   levelImage[i].gameObject.SetActive(false);
+               }
+
             }
         }
     }
@@ -109,8 +121,6 @@ public class MenuManager : MonoBehaviour
     private void OnSelectLevel(int levelIndex)
     {
 
-        
-        // 从Resources加载LevelConfig
         LevelConfig levelConfig = levelConfigNames[levelIndex];
         
 

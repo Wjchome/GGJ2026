@@ -171,6 +171,14 @@ public class GameManager : MonoBehaviour
             if (sum > 0)
             {
                 gameStatusText.text = $"你成功了... 总分:{sum}";
+                
+                // 保存当前关卡的通关状态（使用关卡配置的名称作为键名）
+                if (selectedLevelConfig != null)
+                {
+                    PlayerPrefs.SetInt(selectedLevelConfig.name, 1);
+                    PlayerPrefs.Save(); // 确保立即保存到磁盘
+                    Debug.Log($"已保存关卡通关状态：{selectedLevelConfig.name}");
+                }
             }
             else
             {
