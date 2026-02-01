@@ -142,6 +142,11 @@ public class CardMono : MonoBehaviour
                 return false;
             }
 
+            if (targetManager.currentState == GameState.GameOver)
+            {
+                return false;
+            }
+
             return gameManager.TransferCard(this, cardManager, targetManager);
         }
         else

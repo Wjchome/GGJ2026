@@ -13,17 +13,17 @@ MonoBehaviour:
   m_Name: LevelConfig2
   m_EditorClassIdentifier: 
   aiSettings:
-  - roundsPerGame: 2
+  - roundsPerGame: 3
     checkHandCountExposure: 1
     cardCountAuditMode: 0
     aiThreshold: 17
     CardNumbers: 0300000003000000030000000300000003000000030000000300000003000000030000000300000003000000030000000300000003000000
-  - roundsPerGame: 2
+  - roundsPerGame: 3
     checkHandCountExposure: 0
     cardCountAuditMode: 0
     aiThreshold: 17
     CardNumbers: 0300000003000000030000000300000003000000030000000300000003000000030000000300000003000000030000000300000003000000
-  - roundsPerGame: 2
+  - roundsPerGame: 3
     checkHandCountExposure: 0
     cardCountAuditMode: 0
     aiThreshold: 17
